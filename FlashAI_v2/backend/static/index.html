@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"/><title>FlashAI v2</title></head>
+<body>
+<h1>FlashAI v2 — Image to 30s Video</h1>
+<form id="form">
+<label>Image: <input type="file" name="image" accept="image/*" required></label><br>
+<label>Text: <textarea name="dubbing_text">Hello from FlashAI v2</textarea></label><br>
+<button type="submit">Generate</button>
+</form>
+<div id="status"></div>
+<script>
+const f=document.getElementById('form');
+f.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const fd=new FormData(f);
+  document.getElementById('status').innerText='Uploading...';
+  const res=await fetch('/api/generate',{method:'POST',body:fd});
+  const json=await res.json();
+  document.getElementById('status').innerText='Job queued: '+json.job_id+' UUID: '+json.job_uuid;
+  const poll = setInterval(async ()=>{
+    const s=await (await fetch('/api/status/'+json.job_id)).json();
+    document.getElementById('status').innerText='Status: '+JSON.stringify(s);
+    if(s.status==='finished'){clearInterval(poll);document.getElementById('status').innerHTML='Finished. <a href="/api/download/'+json.job_uuid+'">Download</a>'}
+    if(s.status==='failed'){clearInterval(poll);document.getElementById('status').innerText='Failed: '+s.error}
+  },3000);
+});
+</script>
+</body>
+</html>
